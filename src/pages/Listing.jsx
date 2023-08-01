@@ -105,6 +105,12 @@ function Listing() {
           </li>
           <li>{listing.parking && 'Parking Spot'}</li>
           <li>{listing.furnished && 'Furnished'}</li>
+
+          <li>
+            {listing.imgUrls.map((url) => (
+              <img src={url} width='80%' />
+            ))}
+          </li>
         </ul>
 
         {auth.currentUser?.uid !== listing.userRef && (

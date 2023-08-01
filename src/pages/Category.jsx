@@ -18,6 +18,8 @@ function Category() {
   const [listings, setListings] = useState(null)
   const [loading, setLoading] = useState(true)
 
+  const [lastFetchedListing, setLastFetchedListing] = useState(null)
+
   const params = useParams()
 
   useEffect(() => {
@@ -36,6 +38,10 @@ function Category() {
 
         //execute query
         const querySnap = await getDocs(q)
+
+        const lastVisible = querySnap.docs[querySnap.docs.length - 1]
+        //set last listing as lastFetchedListing
+        setLastFetchedListing(lastVisible)
 
         const listings = []
 
@@ -58,6 +64,42 @@ function Category() {
 
     fetchListings()
   }, [params.categoryName])
+
+  //load more
+  const onFetchMoreListings = async () => {
+    try {
+      const listingsRef = collection(db, 'listings')
+
+      const q = query(
+        listingsRef,
+        where('type', '==', params.categoryName),
+        orderBy('timestamp', 'desc'),
+        startAfter(lastFetchedListing),
+        //fetch more after lastFetchedListing
+        limit(10)
+      )
+
+      const querySnap = await getDocs(q)
+
+      const lastVisible = querySnap.docs[querySnap.docs.length - 1]
+      setLastFetchedListing(lastVisible)
+
+      const listings = []
+
+      querySnap.forEach((doc) => {
+        return listings.push({
+          id: doc.id,
+          data: doc.data(),
+        })
+      })
+
+      setListings((prevState) => [...prevState, ...listings])
+
+      setLoading(false)
+    } catch (error) {
+      toast.error('Could not fetch listings')
+    }
+  }
 
   return (
     <div className='category'>
@@ -84,6 +126,14 @@ function Category() {
               ))}
             </ul>
           </main>
+          <br />
+          <br />
+          {/* if there is no more in last fetch, lastFetchedListing is null */}
+          {lastFetchedListing && (
+            <p className='loadMore' onClick={onFetchMoreListings}>
+              Load More
+            </p>
+          )}
         </>
       ) : (
         <p>No listings for {params.categoryName}</p>
